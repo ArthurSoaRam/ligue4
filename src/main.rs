@@ -1,3 +1,5 @@
+use std::io;
+
 #[derive(Clone, Copy, PartialEq)]
 enum EspaçoTabuleiro {
     Vazio,
@@ -32,6 +34,7 @@ impl Jogo {
 
     fn print_tabuleiro(&self) {
         println!("===============");
+        println!(" 1 2 3 4 5 6 7 ");
 
         for i in 0..6 {
             for j in 0..7 {
@@ -42,17 +45,13 @@ impl Jogo {
         println!("\nVez de: {}", self.vez_de.to_char());
     }
 
-    // tenta adicionar uma peça na ao tebuleiro na posição recebida e troca a vez do jogador. retorna se conseguiu ou não
+    // tenta adicionar uma peça na ao tebuleiro na posição recebida. retorna se conseguiu ou não
     fn adicionar_peça(&mut self, posição: usize) -> bool {
-        if posição >=0 && posição < 7 {
+        if posição < 7 {
             for i in (0..6).rev() {
                 if self.tabuleiro[posição][i] == EspaçoTabuleiro::Vazio {
                     // adicionando a peça ao tabuleiro
                     self.tabuleiro[posição][i] = self.vez_de;
-
-                    // trocando a vez para o outro jogador
-                    if self.vez_de == EspaçoTabuleiro::Jogador1 { self.vez_de = EspaçoTabuleiro::Jogador2 }
-                    else { self.vez_de = EspaçoTabuleiro::Jogador1 }
 
                     return true;
                 }
@@ -61,17 +60,39 @@ impl Jogo {
         false
     }
 
+    // recebe input do jogador, faz a jogada e troca a vez do jogador
     fn jogar(&mut self) {
-        todo!()
+        loop {
+            let mut input_text = String::new();
+            
+            print!("Digite uma posição para jogar: ");
+            io::Write::flush(&mut io::stdout()).expect("flush failed!");
+            io::stdin().read_line(&mut input_text).expect("failed to read from stdin");
+
+            let posição: usize = input_text.trim().parse().expect("Invalid input");
+
+            if self.adicionar_peça(posição-1) {
+                // trocando a vez para o outro jogador
+                if self.vez_de == EspaçoTabuleiro::Jogador1 { self.vez_de = EspaçoTabuleiro::Jogador2 }
+                else { self.vez_de = EspaçoTabuleiro::Jogador1 }
+
+                break;
+            }
+            println!("Posição inválida!");
+        }
+    }
+
+    // começa um novo jogo
+    fn começar(&mut self) {
+        loop {
+            self.print_tabuleiro();
+            self.jogar();
+        }
     }
 }
 
 fn main() {
     let mut jogo = Jogo::novo();
     
-    jogo.print_tabuleiro();
-    println!("{}", jogo.adicionar_peça(0));
-    jogo.print_tabuleiro();
-    println!("{}", jogo.adicionar_peça(0));
-    jogo.print_tabuleiro();
+    jogo.começar();
 }
