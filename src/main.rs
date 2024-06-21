@@ -17,6 +17,14 @@ impl EspaçoTabuleiro {
     }
 }
 
+// indica o estado do jogo
+#[derive(PartialEq)]
+enum EstadoJogo {
+    EmAndamento,
+    Vitória,
+    Empate,
+}
+
 struct Jogo {
     // tabuleiro com 6 linhas e 7 colunas, começando da ponta superior esquerda
     tabuleiro: [[EspaçoTabuleiro; 6]; 7],
@@ -45,8 +53,14 @@ impl Jogo {
         println!("\nVez de: {}", self.vez_de.to_char());
     }
 
-    // verifica se venceu após jogar na posição recebida e retorna bool
-    fn venceu(&self, l: usize, c: usize) -> bool {
+    // verifica se venceu após jogar na posição recebida e retorna EstadoJogo (se está em andamento, perdeu ou deu empate)
+    fn venceu(&self, l: usize, c: usize) -> EstadoJogo {
+        // verificar se deu empate
+        for i in 0..7 {
+            if self.tabuleiro[i][0] == EspaçoTabuleiro::Vazio { break; }
+            if i >= 6 { return EstadoJogo::Empate }
+        }
+
         // quantidade de peças alinhadas da mesma cor
         let mut cont = 1;
 
@@ -63,7 +77,7 @@ impl Jogo {
         }
         
         if cont >= 4 {
-            return true;
+            return EstadoJogo::Vitória;
         }
 
         //horizontal -
@@ -81,7 +95,7 @@ impl Jogo {
         }
 
         if cont >= 4 {
-            return true;
+            return EstadoJogo::Vitória;
         }
 
         // diagonal \
@@ -99,7 +113,7 @@ impl Jogo {
         }
 
         if cont >= 4 {
-            return true;
+            return EstadoJogo::Vitória;
         }
 
         // diagonal /
@@ -117,29 +131,27 @@ impl Jogo {
         }
 
         if cont >= 4 {
-            return true;
+            return EstadoJogo::Vitória;
         }
 
-        false
+        EstadoJogo::EmAndamento
     }
 
     // tenta adicionar uma peça na ao tebuleiro na posição recebida. retorna se conseguiu e se ganhou
-    fn adicionar_peça(&mut self, posição: usize) -> (bool, bool) {
+    fn adicionar_peça(&mut self, posição: usize) -> (bool, EstadoJogo) {
         if posição < 7 {
             for i in (0..6).rev() {
                 if self.tabuleiro[posição][i] == EspaçoTabuleiro::Vazio {
                     // adicionando a peça ao tabuleiro
                     self.tabuleiro[posição][i] = self.vez_de;
 
-                    if self.venceu(i, posição) {
-                        return (true, true);
-                    }
+                    let estado = self.venceu(i, posição);
 
-                    return (true, false);
+                    return (true, estado);
                 }
             }
         }
-        (false, false)
+        (false, EstadoJogo::EmAndamento)
     }
 
     // recebe input do jogador e retorna a posição que ele escolheu
@@ -154,16 +166,16 @@ impl Jogo {
     }
 
     // recebe input do jogador, faz a jogada e troca a vez do jogador. retorna "true" caso um jogador tenha vencido
-    fn jogar(&mut self) -> bool {
+    fn jogar(&mut self) -> EstadoJogo {
         loop {
             let posição: usize = Jogo::receber_input();
 
             let resultado = self.adicionar_peça(posição);
             // se conseguiu adicionar a peça
             if resultado.0 {
-                // se venceu
-                if resultado.1 {
-                    return true;
+                // se acabou o jogo
+                if resultado.1 != EstadoJogo::EmAndamento {
+                    return resultado.1;
                 }
 
                 // trocando a vez para o outro jogador
@@ -174,7 +186,7 @@ impl Jogo {
             }
             println!("Posição inválida!");
         }
-        false
+        EstadoJogo::EmAndamento
     }
 
     // começa um novo jogo
@@ -182,11 +194,20 @@ impl Jogo {
         loop {
             self.print_tabuleiro();
 
-            if self.jogar() {
-                // se alguém venceu
+            match self.jogar() {
+                EstadoJogo::EmAndamento => {},
+
+                EstadoJogo::Vitória => {
                 self.print_tabuleiro();
                 println!("Jogador {} venceu!!", self.vez_de.to_char());
                 break;
+                },
+
+                EstadoJogo::Empate => {
+                self.print_tabuleiro();
+                println!("Empatou!");
+                break;
+                },
             }
         }
     }
